@@ -172,3 +172,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# ignore CSVs
+*.csv
+
+# ignore local things
+.idea
+utils/notes.txt
