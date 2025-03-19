@@ -1,0 +1,53 @@
+
+
+Primary DataSet:
+https://data.cityofchicago.org/Transportation/Red-Light-Camera-Violations/spqx-js37/about_data
+
+* 10 columns of data
+
+Source DataSet:
+
+INTERSECTION
+
+	Description: Interrection of the location of the red light enforcement camera(s). There may be more than one camera at each intersection.
+	Type: Text
+
+CAMERA ID
+
+	Description: A unique ID for each physical camera at an intersection, which may contain more than one camera.
+	Type: Text
+
+ADDRESS
+
+	Description: The address of the physical camera (CAMERA ID). The address may be the same for all cameras or different, based on the physical installation of each camera.
+	Type: Text
+
+VIOLATION DATE
+
+	Description: The date of when the violations occurred. NOTE: The citation may be issued on a different date. The date field does not contain a timestamp and is purely a date
+	Type: Floating Timestamp
+
+VIOLATIONS
+	Description: Number of violations for each camera on a particular day.
+	Type: Number
+
+X COORDINATE
+	Description: The X Coordinate, measured in feet, of the location of the camera. Geocoded using Illinois State Plane East (ESRI:102671).
+	Type: Number
+
+Y COORDINATE
+	Description: The Y Coordinate, measured in feet, of the location of the camera. Geocoded using Illinois State Plane East (ESRI:102671).
+	Type: Number
+
+LATITUDE
+	Description: The latitude of the physical location of the camera(s) based on the ADDRESS column. Geocoded using the WGS84.
+	Type: Number
+
+LONGITUDE
+
+	Description: The longitude of the physical location of the camera(s) based on the ADDRESS column. Geocoded using the WGS84.
+	Type: Number
+
+LOCATION
+	Description: The coordinates of the camera(s) based on the LATITUDE and LONGITUDE columns. Geocoded using the WGS84.
+	Type: Location
