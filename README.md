@@ -26,9 +26,53 @@ pip install pandas numpy matplotlib scipy seaborn
 
 Fields used in this repo
 
-| Field     | Type | Description | 
-|-----------|------|-------------|
-| ALIGNMENT | Text |  Street alignment at crash location, as determined by reporting officer           |
-| BEAT_OF_OCCURRENCE | Text |  Chicago Police Department Beat ID. Boundaries available at https://data.cityofchicago.org/d/aerh-rz74           |
-
-
+| Column Name                   | Data Type      |
+|-------------------------------|----------------|
+| CRASH_RECORD_ID               | String         |
+| CRASH_DATE_EST_I              | String         |
+| CRASH_DATE                    | Date Timestamp |
+| POSTED_SPEED_LIMIT            | Number         |
+| TRAFFIC_CONTROL_DEVICE        | String         |
+| DEVICE_CONDITION              | String         |
+| WEATHER_CONDITION             | String         |
+| LIGHTING_CONDITION            | String         |
+| FIRST_CRASH_TYPE              | String         |
+| TRAFFICWAY_TYPE               | String         |
+| LANE_CNT                      | Number         |
+| ALIGNMENT                     | String         |
+| ROADWAY_SURFACE_COND          | String         |
+| ROAD_DEFECT                   | String         |
+| REPORT_TYPE                   | String         |
+| CRASH_TYPE                    | String         |
+| INTERSECTION_RELATED_I        | String         |
+| NOT_RIGHT_OF_WAY_I            | String         |
+| HIT_AND_RUN_I                 | String         |
+| DAMAGE                        | String         |
+| DATE_POLICE_NOTIFIED          | Date Timestamp |
+| PRIM_CONTRIBUTORY_CAUSE       | String         |
+| SEC_CONTRIBUTORY_CAUSE        | String         |
+| STREET_NO                     | Number         |
+| STREET_DIRECTION              | String         |
+| STREET_NAME                   | String         |
+| BEAT_OF_OCCURRENCE            | Number         |
+| PHOTOS_TAKEN_I                | String         |
+| STATEMENTS_TAKEN_I            | String         |
+| DOORING_I                     | String         |
+| WORK_ZONE_I                   | String         |
+| WORK_ZONE_TYPE                | String         |
+| WORKERS_PRESENT_I             | String         |
+| NUM_UNITS                     | Number         |
+| MOST_SEVERE_INJURY            | String         |
+| INJURIES_TOTAL                | Number         |
+| INJURIES_FATAL                | Number         |
+| INJURIES_INCAPACITATING       | Number         |
+| INJURIES_NON_INCAPACITATING   | Number         |
+| INJURIES_REPORTED_NOT_EVIDENT | Number         |
+| INJURIES_NO_INDICATION        | Number         |
+| INJURIES_UNKNOWN              | Number         |
+| CRASH_HOUR                    | Number         |
+| CRASH_DAY_OF_WEEK             | Number         |
+| CRASH_MONTH                   | Number         |
+| LATITUDE                      | Number         |
+| LONGITUDE                     | Number         |
+| LOCATION                      | Point          |
