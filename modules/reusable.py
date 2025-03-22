@@ -1,0 +1,223 @@
+
+# built functions to load or interact over HTTP with external resources
+import requests
+import os
+
+# data access and manipulation libraries
+import pandas as pd
+import numpy as np
+from scipy.stats import gaussian_kde,norm
+
+
+#visualization libraries
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as ticker
+import seaborn as sns
+
+#visualization libraries - ui interaction
+import panel as pn
+import ipywidgets as widgets
+from IPython.display import display
+
+
+
+const_src_url = "https://data.cityofchicago.org/api/views/85ca-t3if/rows.csv?fourfour=85ca-t3if&cacheBust=1742398767&date=20250319&accessType=DOWNLOAD"
+const_default_storage_file ="assets/data/chicago_traffic_crashes.csv"
+
+
+
+# load the datat from the stored assets 
+# reusable function to load a pandas dataframe from an existing csv file
+
+
+
+def download_chicago_crashdata(storein:str=const_default_storage_file,src_url:str=const_src_url, force:bool=False):
+
+    """
+    Downloads the Chicago crash data from the public site and stores it in the provided filepath.
+    Args:
+        filepath (str): File where to store the downloaded data
+    Returns:
+        None
+    """
+    url = src_url
+    
+    # only delete the file on force and it exists
+    if os.path.exists(storein) and force==True:
+        try:
+            os.remove(storein)
+            print(f"Existing file {storein} deleted via Force being set to True.")
+        except OSError as e:
+            print(f"Error deleting existing file: {e}. Please delete or replace manually if needed.")
+
+    if os.path.exists(storein) == False:
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            with open(storein, 'wb') as f:
+                f.write(response.content)
+            print(f"CSV saved to {storein}")
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching or saving CSV: {e}")
+        except IOError as e:
+            print(f"Error writing to file: {e}")
+    else:
+        print(f"CSV present in {storein}.")
+            
+    
+            
+    
+def get_chicago_crash_data(filepath:str=const_default_storage_file)->pd.DataFrame:
+    """
+    Gets a CSV dataset via the url
+    Args:
+
+        filepath (str): The path to save the CSV file.
+    Returns:
+        A pandas DataFrame containing the CSV file content
+    """
+
+    # if the file does exist locally - we will go grab it
+    if os.path.exists(filepath):
+        try:
+            return etl_crash_data(pd.read_csv(filepath))
+        except Exception as e:
+            print(f"Error loading the CSV: {e}")
+            return None
+
+    # not force and the file is already there - voila
+    print(f"No file called::{filepath} found")
+    return None
+
+
+def etl_crash_data(df:pd.DataFrame)->pd.DataFrame:
+    """
+    Does some transformation and extraction of additional data into our crash dataset that can be helpful calculating visualization
+    Args:
+
+        df (pandas dataframe): Dataframe to modify and pass back to the caller
+    Returns:
+        A modified dataframe with some additional enriched data.
+    """
+
+    # call out why this is important - pass in the format - faster to load seconds over minutes.
+    df['CRASH_DATE'] = pd.to_datetime(df['CRASH_DATE'],format="%m/%d/%Y %I:%M:%S %p")
+    df['CRASH_YEAR'] = df['CRASH_DATE'].dt.year
+    df['CRASH_YEAR'] = df['CRASH_DATE'].dt.year
+    df['CRASH_DAY_NAME'] = df['CRASH_DATE'] .dt.day_name()
+    df['CRASH_MONTH_NAME'] = df['CRASH_DATE'].dt.month_name()
+
+    # we want to insure our numeric data is properly set to 0 where NaN is encountered
+    df['INJURIES_TOTAL'] = df['INJURIES_TOTAL'].fillna(0)
+    df['INJURIES_FATAL'] = df['INJURIES_FATAL'].fillna(0)
+    df['INJURIES_INCAPACITATING'] = df['INJURIES_INCAPACITATING'].fillna(0)
+    df['INJURIES_NO_INDICATION'] = df['INJURIES_NO_INDICATION'].fillna(0)
+    df['INJURIES_NON_INCAPACITATING'] = df['INJURIES_NON_INCAPACITATING'].fillna(0)
+    df['INJURIES_UNKNOWN'] = df['INJURIES_UNKNOWN'].fillna(0)
+    df['INJURIES_REPORTED_NOT_EVIDENT'] = df['INJURIES_REPORTED_NOT_EVIDENT'].fillna(0)
+
+    return df
+
+# ****************************************************************
+# visualization functions 
+# ****************************************************************
+
+
+# ****************************************************************
+#
+# ****************************************************************
+def plot_crash_count_by_year(df:pd.DataFrame):
+    """
+    Displays the crash count by year from the given dataset.
+
+    Args:
+        df (pd.DataFrame): The crash dataset as a Pandas DataFrame.
+                           It should contain a 'CRASH_YEAR' column with datetime information.
+    """
+    # Count the number of crashes for each year
+    crash_counts_by_year = df['CRASH_YEAR'].value_counts().sort_index()
+    
+    year_counts = crash_counts_by_year.index.tolist()
+    counts = crash_counts_by_year.values.tolist()
+
+    # Create the bar plot
+    plt.figure(figsize=(10, 6))
+
+    # use the bars variable to later add annotation
+    bars = plt.bar( year_counts,counts, color='skyblue')
+
+    # Add labels and title
+    plt.xlabel("Year")
+    plt.ylabel("Crash Count")
+    plt.title("Crash Count by Year")
+    plt.xticks(rotation=45, ha='right')
+
+     # Annotate the percentage of change between the bars
+    for i in range(1, len(counts)):
+        old_count = counts[i-1]
+        new_count = counts[i]
+        if old_count == 0:
+            percentage_change = float('inf') if new_count > 0 else 0
+        else:
+            percentage_change = ((new_count - old_count) / old_count) * 100
+
+        height = bars[i].get_height()
+        plt.annotate(f'{percentage_change:.2f}%',
+                     xy=(bars[i].get_x() + bars[i].get_width() / 2, height),
+                     xytext=(0, 3),  # Offset in points
+                     textcoords='offset points',
+                     ha='center', va='bottom')
+    
+    plt.grid(axis='y', linestyle='--')
+    plt.tight_layout()
+    plt.show()
+
+
+# ****************************************************************
+#
+# ****************************************************************
+def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinjury:int=1):
+    """
+    Generates a scatter plot of 'LANE_CNT' against 'INJURIES_TOTAL'
+    from the input pandas DataFrame, with added jitter.
+
+    Args:
+        df: The pandas DataFrame containing crash data with
+            'CRASH_HOUR' and 'INJURIES_TOTAL' columns.
+    """
+    if 'CRASH_HOUR' not in df.columns or 'INJURIES_TOTAL' not in df.columns:
+        print("Error: DataFrame must contain 'CRASH_HOUR' and 'INJURIES_TOTAL' columns.")
+        return
+
+    # Define the amount of jitter
+    jitter = 0.2
+
+    df_copy = df.copy()
+    df_copy = df_copy[df_copy['INJURIES_TOTAL']>=minimalinjury]
+
+    # Apply jitter to the 'LANE_CNT' and 'INJURIES_TOTAL' columns - we align the size of the filtered dataset
+    jittered_x = df_copy['INJURIES_TOTAL'] + np.random.normal(loc=0, scale=jitter, size=len(df_copy))
+    jittered_y = df_copy['CRASH_HOUR'] + np.random.normal(loc=0, scale=jitter, size=len(df_copy))
+
+
+     # Adjust this value to control the amount of jitter
+    plt.figure(figsize=(16, 6))
+    sns.scatterplot(x=jittered_x, y=jittered_y, data=df_copy, alpha=0.6)
+
+    # use the original so we get all hours
+    plt.yticks(np.arange(0,24), sorted(df['CRASH_HOUR'].unique())) # Label y-axis with day names
+    
+    plt.ylabel('Hour of the Day')
+    plt.xlabel('Total Injuries')
+
+    plt.title('Scatter Plot of Hour of the Day vs. Total Injuries (with Jitter)')
+    plt.grid(True, which="major", axis="y", linestyle='--', alpha=0.7) # Add a horizontal grid for days
+    plt.show()
+
+
+
+
+
+
