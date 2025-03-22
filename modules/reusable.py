@@ -138,7 +138,7 @@ def plot_crash_count_by_year(df:pd.DataFrame):
     """
     # Count the number of crashes for each year
     crash_counts_by_year = df['CRASH_YEAR'].value_counts().sort_index()
-    
+    years = sorted(df['CRASH_YEAR'].unique())
     year_counts = crash_counts_by_year.index.tolist()
     counts = crash_counts_by_year.values.tolist()
 
@@ -152,7 +152,9 @@ def plot_crash_count_by_year(df:pd.DataFrame):
     plt.xlabel("Year")
     plt.ylabel("Crash Count")
     plt.title("Crash Count by Year")
-    plt.xticks(rotation=45, ha='right')
+    
+    # in this case, our x axis ticks are the same as the year label - 
+    plt.xticks(labels=years,ticks=years,rotation=45, ha='right')
 
      # Annotate the percentage of change between the bars
     for i in range(1, len(counts)):
@@ -170,15 +172,115 @@ def plot_crash_count_by_year(df:pd.DataFrame):
                      textcoords='offset points',
                      ha='center', va='bottom')
     
-    plt.grid(axis='y', linestyle='--')
+    #plt.grid(axis='y', linestyle='--')
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+# let's understand via the violin plot
+
+def plot_violinplot_injuries_by_lighting(df: pd.DataFrame,year:int=2025,applylogtransform:bool=True):
+    """
+    Generates a violin plot of 'INJURIES_TOTAL' for different
+    'LIGHTING_CONDITION' categories from the input DataFrame.
+
+    Args:
+        df (pd.DataFrame): The pandas DataFrame containing crash data with
+            'INJURIES_TOTAL' and 'LIGHTING_CONDITION' columns.
+        year (int): The year we want to filter on, we will default to 2025
+        applylogtranform (bool): The year we want to filter on, we will default to 2025
+    """
+    if 'INJURIES_TOTAL' not in df.columns or 'LIGHTING_CONDITION' not in df.columns:
+        print("Error: DataFrame must contain 'INJURIES_TOTAL' and 'LIGHTING_CONDITION' columns.")
+        return
+
+    plt.figure(figsize=(12, 8))
+    df_copy = df.copy()
+    df_copy = df_copy[df_copy['CRASH_YEAR']==year]
+
+    if applylogtransform==True:
+        # due to a large number of lower number of total injuries, the data is heavily skewed
+        # applying a log transform to stretch out the data
+        df_copy['LOG_INJURIES_TOTAL'] = np.log(df_copy['INJURIES_TOTAL']+1)
+        sns.violinplot(x='LIGHTING_CONDITION', y='LOG_INJURIES_TOTAL', data=df_copy)
+        plt.ylabel('Total Injuries - (LOG Transformed)')
+    else:
+        sns.violinplot(x='LIGHTING_CONDITION', y='INJURIES_TOTAL', data=df_copy)
+        plt.ylabel('Total Injuries')
+    
+    plt.xlabel('Lighting Condition')
+    plt.title(f'Violin Plot of Total Injuries by Lighting Condition -{year}')
+    plt.xticks(rotation=45, ha='right')  # Rotate x-axis labels for better readability
     plt.tight_layout()
     plt.show()
 
 
 # ****************************************************************
+# function for setting up a widget for the jitter to apply a filter on the year
+# ****************************************************************
+def setup_interactive_jitter(df:pd.DataFrame):
+
+    """
+    Setup for the 
+    """
+    
+    # we need to activate the widgets
+    pn.extension('ipywidgets')
+
+    # unique set of years reverse sorted
+    years = sorted(df['CRASH_YEAR'].unique(),reverse=True)
+    
+    #*********************************************
+    # setup a dropdown widget bound to the unique
+    # default to the most current year
+    #*********************************************
+    yearselector = widgets.Dropdown(
+        options=years,
+        value=years[0],
+        description='Year:',
+        disabled=False,
+    )
+    
+    #**************************************************************************************
+    #setup a check option to allow the user to see the data with or without a log transform
+    #**************************************************************************************
+    minimalinjuryselector = widgets.IntSlider(
+        value=1,
+        min=0,
+        max=30,
+        step=1,
+        description='Injury Count:',
+        disabled=False,
+        continuous_update=False,
+        orientation='horizontal',
+        readout=True,
+        readout_format='d'
+    )
+    
+    # our callback function as the widget set is being interacted with
+    def crash_year_plot(year,minimalinjury):
+        display(plot_crash_hour_of_week_vs_injuries_with_jitter(df,minimalinjury,year))
+        
+    # here we will create a panel row and apply Markdown # to create a title and our widgets
+    row = pn.Row('# Options', yearselector, minimalinjuryselector, styles=dict(background='WhiteSmoke'))
+    
+    # create the initial iteractive plot
+    filteredplot = widgets.interactive_output(crash_year_plot, {'year': yearselector,'minimalinjury':minimalinjuryselector})
+    
+    # display the row
+    display(row)
+    # display the filtered interactive
+    display(filteredplot)
+
+
+# ****************************************************************
 #
 # ****************************************************************
-def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinjury:int=1):
+def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinjury:int=1,year:int=None):
     """
     Generates a scatter plot of 'LANE_CNT' against 'INJURIES_TOTAL'
     from the input pandas DataFrame, with added jitter.
@@ -197,6 +299,11 @@ def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinju
     df_copy = df.copy()
     df_copy = df_copy[df_copy['INJURIES_TOTAL']>=minimalinjury]
 
+    # filter further by year
+    if year is not None:
+        df_copy = df_copy[df_copy['CRASH_YEAR'] == year]
+        
+
     # Apply jitter to the 'LANE_CNT' and 'INJURIES_TOTAL' columns - we align the size of the filtered dataset
     jittered_x = df_copy['INJURIES_TOTAL'] + np.random.normal(loc=0, scale=jitter, size=len(df_copy))
     jittered_y = df_copy['CRASH_HOUR'] + np.random.normal(loc=0, scale=jitter, size=len(df_copy))
@@ -212,7 +319,10 @@ def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinju
     plt.ylabel('Hour of the Day')
     plt.xlabel('Total Injuries')
 
-    plt.title('Scatter Plot of Hour of the Day vs. Total Injuries (with Jitter)')
+    title = f'Jitter Scatter Plot of Hour of the Day vs. Minimal Injury ({minimalinjury})'
+    if year is not None:
+        title = f'Jitter Scatter Plot of Hour of the Day vs. Minimal Injury ({minimalinjury}) - {year}'
+    plt.title(title)
     plt.grid(True, which="major", axis="y", linestyle='--', alpha=0.7) # Add a horizontal grid for days
     plt.show()
 
