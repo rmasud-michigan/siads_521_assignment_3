@@ -6,8 +6,7 @@ import os
 # data access and manipulation libraries
 import pandas as pd
 import numpy as np
-from scipy.stats import gaussian_kde,norm
-
+from scipy.stats import gaussian_kde,norm, kurtosis
 
 #visualization libraries
 import matplotlib.pyplot as plt
@@ -327,7 +326,177 @@ def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinju
     plt.show()
 
 
+# ****************************************************************
+# function for setting up a widget for the jitter to apply a filter on the year
+# ****************************************************************
+def setup_histogram_crashes_by_year(df:pd.DataFrame):
+
+    """
+    Setup for the 
+    """
+    
+    # we need to activate the widgets
+    pn.extension('ipywidgets')
+
+    # unique set of years reverse sorted
+    years = sorted(df['CRASH_YEAR'].unique(),reverse=True)
+    
+    #*********************************************
+    # setup a dropdown widget bound to the unique
+    # default to the most current year
+    #*********************************************
+    yearselector = widgets.Dropdown(
+        options=years,
+        value=years[0],
+        description='Year:',
+        disabled=False,
+    )
+    
+    
+    # our callback function as the widget set is being interacted with
+    def crash_year_plot(year):
+        display(plot_histogram_crashes_by_year(df,year))
+        
+    # here we will create a panel row and apply Markdown # to create a title and our widgets
+    row = pn.Row('# Options', yearselector, styles=dict(background='WhiteSmoke'))
+    
+    # create the initial iteractive plot
+    filteredplot = widgets.interactive_output(crash_year_plot, {'year': yearselector})
+    
+    # display the row
+    display(row)
+    # display the filtered interactive
+    display(filteredplot)
 
 
+
+
+
+
+# ****************************************************************
+#
+# ****************************************************************
+def plot_histogram_crashes_by_year(df:pd.DataFrame,year:int):
+
+    df_copy = df.copy()
+    df_copy = df_copy[df_copy['CRASH_YEAR']==year]
+    plt.figure(figsize=(10, 5))
+    crash_hours = df_copy['CRASH_HOUR']
+    plt.hist(crash_hours, bins=range(25), density=True, alpha=0.4, color='green', edgecolor='black', label='Histogram')
+    
+    # like week 2
+    kde = gaussian_kde(crash_hours)
+    x_kde = np.linspace(min(crash_hours), max(crash_hours), 100)
+    density_kde = kde(x_kde)
+    plt.plot(x_kde, density_kde, color='red', linewidth=2, label='KDE')
+    
+    # like week 2 -calculate the mean and standard deviation of the data
+    mean = np.mean(crash_hours)
+    std = np.std(crash_hours)
+    
+    # norm dist
+    xmin, xmax = plt.xlim()
+    x_norm = np.linspace(xmin, xmax, 100)
+    p = norm.pdf(x_norm, mean, std)
+
+    # calculate the kurtosis value
+    kurtosisval = kurtosis(crash_hours)
+    
+    plt.plot(x_norm, p, 'k--', linewidth=2, label=f'Normal Distribution\n(μ={mean:.2f}, σ={std:.2f})')
+
+    # empty to add value purely to the legend - easier than a textbox!!
+    plt.plot([], [], ' ', label=f'Kurtosis Value\n{kurtosisval:.2f}')
+
+    
+    # Customize the plot
+    plt.title('Distribution of Crash Hours with Normal Distribution')
+    plt.xlabel('Hour of the day (0-23) from midnight to 11pm')
+    plt.ylabel('Probability Density')
+
+    # we want ours 0 (midnight to 11 pm) in that order
+    plt.xticks(range(24))
+    plt.legend(loc='best')
+    # digging the grid -- 
+    plt.grid(True, linestyle='--', alpha=0.4)
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+# ****************************************************************
+# function for setting up a widget for the heat map year filter
+# ****************************************************************
+def setup_heatmap_weather_road_condition_by_year(df:pd.DataFrame):
+
+    """
+    Setup for the 
+    """
+    
+    # we need to activate the widgets
+    pn.extension('ipywidgets')
+
+    # unique set of years reverse sorted
+    years = sorted(df['CRASH_YEAR'].unique(),reverse=True)
+    
+    #*********************************************
+    # setup a dropdown widget bound to the unique
+    # default to the most current year
+    #*********************************************
+    yearselector = widgets.Dropdown(
+        options=years,
+        value=years[0],
+        description='Year:',
+        disabled=False,
+    )
+    
+    # our callback function as the widget set is being interacted with
+    def crash_year_plot(year):
+        display(plot_frequency_heatmap_weather_road_condition(df,year))
+        
+    # here we will create a panel row and apply Markdown # to create a title and our widgets
+    row = pn.Row('# Options', yearselector, styles=dict(background='WhiteSmoke'))
+    
+    # create the initial iteractive plot
+    filteredplot = widgets.interactive_output(crash_year_plot, {'year': yearselector})
+    
+    # display the row
+    display(row)
+    # display the filtered interactive
+    display(filteredplot)
+
+
+def plot_frequency_heatmap_weather_road_condition(df: pd.DataFrame,year:int=None):
+    """
+    Generates a frequency heatmap of 'WEATHER_CONDITION' vs.
+    'ROADWAY_SURFACE_COND' from the input DataFrame.
+
+    Args:
+        df: The pandas DataFrame containing crash data with
+            'WEATHER_CONDITION' and 'ROADWAY_SURFACE_COND' columns.
+    """
+    if 'WEATHER_CONDITION' not in df.columns or 'ROADWAY_SURFACE_COND' not in df.columns:
+        print("Error: DataFrame must contain 'WEATHER_CONDITION' and 'ROADWAY_SURFACE_COND' columns.")
+        return
+
+    df_copy = df.copy();
+    default_title='Heatmap: Weather Condition vs. Roadway Surface Condition'
+    
+    if year is not None:
+        df_copy = df_copy[df_copy['CRASH_YEAR'] == year]
+        default_title =default_title+ f' {year}'
+    
+    # Create a contingency table (frequency count) of the two columns
+    cross_tab = pd.crosstab(df_copy['WEATHER_CONDITION'], df_copy['ROADWAY_SURFACE_COND'])
+
+    plt.figure(figsize=(10, 8))
+    ax = sns.heatmap(cross_tab, annot=True, fmt="d", cmap="viridis", cbar_kws={'label': 'Frequency'})
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+
+    plt.xlabel('Roadway Surface Condition')
+    plt.ylabel('Weather Condition')
+    plt.title(default_title)
+    plt.tight_layout()
+    plt.show()
 
 
