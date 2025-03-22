@@ -177,6 +177,8 @@ cython_debug/
 # ignore CSVs
 *.csv
 
+.ipynb_checkpoints
+
 # ignore local things
 .idea
 utils/notes.txt
