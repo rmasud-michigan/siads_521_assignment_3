@@ -10,8 +10,6 @@ from scipy.stats import gaussian_kde,norm, kurtosis
 
 #visualization libraries
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib.ticker as ticker
 import seaborn as sns
 
 #visualization libraries - ui interaction
