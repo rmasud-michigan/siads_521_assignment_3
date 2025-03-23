@@ -125,7 +125,7 @@ def etl_crash_data(df:pd.DataFrame)->pd.DataFrame:
 
 
 # ****************************************************************
-#
+# Plot the crash count by year in a bar graph
 # ****************************************************************
 def plot_crash_count_by_year(df:pd.DataFrame):
     """
@@ -176,12 +176,10 @@ def plot_crash_count_by_year(df:pd.DataFrame):
     plt.show()
 
 
-
-
-
-
+#***************************************
 # let's understand via the violin plot
-
+# include or not include : tbd
+#***************************************
 def plot_violinplot_injuries_by_lighting(df: pd.DataFrame,year:int=2025,applylogtransform:bool=True):
     """
     Generates a violin plot of 'INJURIES_TOTAL' for different
@@ -262,7 +260,7 @@ def setup_interactive_jitter(df:pd.DataFrame):
     
     # our callback function as the widget set is being interacted with
     def crash_year_plot(year,minimalinjury):
-        display(plot_crash_hour_of_week_vs_injuries_with_jitter(df,minimalinjury,year))
+        display(plot_crash_hour_of_day_vs_injuries_with_jitter(df,minimalinjury,year))
         
     # here we will create a panel row and apply Markdown # to create a title and our widgets
     row = pn.Row('# Options', yearselector, minimalinjuryselector, styles=dict(background='WhiteSmoke'))
@@ -277,9 +275,9 @@ def setup_interactive_jitter(df:pd.DataFrame):
 
 
 # ****************************************************************
-#
+# Plot the crash hour in the day with injuries and jitter it up
 # ****************************************************************
-def plot_crash_hour_of_week_vs_injuries_with_jitter(df: pd.DataFrame,minimalinjury:int=1,year:int=None):
+def plot_crash_hour_of_day_vs_injuries_with_jitter(df: pd.DataFrame,minimalinjury:int=1,year:int=None):
     """
     Generates a scatter plot of 'LANE_CNT' against 'INJURIES_TOTAL'
     from the input pandas DataFrame, with added jitter.
