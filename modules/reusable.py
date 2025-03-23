@@ -19,16 +19,18 @@ import panel as pn
 import ipywidgets as widgets
 from IPython.display import display
 
-
-
+const_default_storage_dir ='assets/data'
 const_src_url = "https://data.cityofchicago.org/api/views/85ca-t3if/rows.csv?fourfour=85ca-t3if&cacheBust=1742398767&date=20250319&accessType=DOWNLOAD"
 const_default_storage_file ="assets/data/chicago_traffic_crashes.csv"
-
 
 
 # load the datat from the stored assets 
 # reusable function to load a pandas dataframe from an existing csv file
 
+
+# always ensure the asste/data directory is created
+if not os.path.exists(const_default_storage_dir):
+    os.makedirs(const_default_storage_dir)
 
 
 def download_chicago_crashdata(storein:str=const_default_storage_file,src_url:str=const_src_url, force:bool=False):
