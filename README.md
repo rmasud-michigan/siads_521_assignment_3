@@ -144,3 +144,158 @@ plot_crash_count_by_year(df_chicago_data)
 ```
 
 ![figure_1_static](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main/static/figure_1_static.png)
+
+#### Crash count analysis
+
+> The bar plot reveals some intersting data points.
+>> * As part of the plot, the % of change was added. Just in the first 4 years, the initial % of change is quite large. Data collection appears to have started in 2015 but from 2016 forward appears to be more complete.
+>>    * **Using % can be misleading because looking at 2014 to 2015, the change is massive.** Did it mean that Chicago was having an immediate accident crisis? No. The data is clearly incomplete within the dataset and an indicator that the data from 2016 forward is really a better starting point for analysis.
+>>    * The spike between 2016 and 2017 may have been influenced by a well-known baseball team breaking a 108-year streak of not winning a World Series and an increase in visitors to Wrigley Field from all over the country the following year.
+>>    * Additional factors could be a lower gas price in 2017 that increased drivers visiting the city
+>>    * https://data.theadvertiser.com/gas-price/chicago/YORD/2023-02-06/  
+>> * 2020 has an interesting dip
+>>   * What could cause this? The global COVID-19 pandemic resulted in a global slowdown and near stoppage of human movement. We can see that impact on the city for events and in office work and how they influenced a lower number of car crashes.
+>>   * [Chicago traffic, CTA patterns dramatically affected by COVID pandemic](https://abc7chicago.com/chicago-traffic-construction-cta-bus-tracker/10451178/)
+>> * Data collection for 2025 is ongoing and running this workbook at later points in 2025 or beyond may contain additional data.
+
+
+### Figure 2 - Injury density by hour of the day
+> With our crash data, we are getting a sense that there are a lot of crashes! Bar plots make the difficult to zoom into the data to see how often it occurs. Similar to having a single Bin size. So we want to look at our data at a smaller scale. The hour-by-day plot with a jitter can help us understand what hours have more observations of incidents with injuries.
+> * Questions we can look to answer
+>   * When do we see higher instances of injuries?
+>   * Are times in the day that have a lot of injuries?
+>   * What hours have more frequency of 4 or more injuries?
+
+ 
+```
+#use the reusable function will evaluate all years and filter initially on crashes with >=1 injuries
+
+# all injuries
+plot_crash_hour_of_day_vs_injuries_with_jitter(df_chicago_data)
+```
+
+![figure_2_static](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main/static/figure_2_static.png)
+
+#### Initial Jitter Scatter Analysis
+
+> We can see that irrespective of hour the day, across all years, < 5 injuries is heavily saturated in observed incidents. One of the challenges of a jitter visualizations stems from the zoom level on the data being evaluated. In the initial jitter plot, we are looking at all years and >= 1 injuries. If we scope it down two fold by year an the minimal injury count, we should be able zoom into the data and get a better idea if patterns emerge.
+
+```
+# call the reusable function to enable the widgets to filter on year and injury counts
+# this will setup an options section with panel and display in a row 2 interactive filters
+# filter 1: year (bound to the unique list of all years within the dataframe
+# filter 2: injury count (static range of 1 to 30)
+# as the user interacts with the filters the selected year and injury count will filter the dataset and re-plot the data
+setup_interactive_jitter(df_chicago_data)
+```
+
+![figure_2_with_options_static](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main/static/figure_2_with_options_static.png)
+
+#### Crash hour analysis
+
+> When looking at the plot and the minimal injury is 1 or more, the concentration is still very heavy difficult to discern if groupings are present. Using the widgets and if we look at 2023 as an example and ask the question "In 2023, what hours had 4 or more injuries", we can see that the afternoon hours (13 - 16 or 1 pm to 4 pm) demonstrate a cluster of injuries. What can be a possible cause of this?
+
+
+> * What hours should I avoid?
+> * Using the year 2024 as an example, the afternoon hours of 3 pm to 5 pm have a visibly larger number of injuries.
+> * Rush hour for workers leaving the city and traveling home leads to a larger number of cars on the roads at those times.
+
+> **Image found in static/2023_minimal_4_injury.png**
+
+> ![alt text](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main/static/2023_minimal_4_injury.png)
+
+### Figure 3 - Probability Distribution (Hour of Day)
+
+> As we examine the jitter plot, it raises an interesting question about the hour of day and the overall probability of a car accident occurring. To assist in answering the question we can utilize a histogram in combination with a kernel density estimation and a normal distribution. Maybe this can present an additional angle on the data.
+
+> We can look to anwer questions like:
+> * Filtering by year, are there times of the day that pose more risk for a car accident? If so, how risky is it?
+> * Filtering by year, what level of kurtosis is present in the data?
+
+```
+# use the reusable function to setup a widget control histogram
+# filter 1: year (bound to the unique list of all years within the dataset
+# plot a histogram of the crash data for the selected year
+# calculate the normal distribution and kurtosis value
+setup_histogram_crashes_by_year(df_chicago_data)
+```
+#### static example of figure 3
+![figure_3_static](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main//static/figure_3_static.png)
+
+#### Probability analysis
+
+> Where do we see the most risk traveling in the city in vehicle?
+> * We can see using a kernel density with normal distribution, the time morning rush hours of 7 to 8 am pose a range of risks in the morning. We can also see the afternoon hours starting from 3 pm to 6 or  7 pm are the next risk windows. 
+
+> When can we have travel with the lowest risk?
+> * If we have to travel to the city of Chicago, and we want to minimize our risk, we should travel to and from the city between 10 am and leave before 3 pm.
+
+### Figure 4 - Heatmap Weather Conditions to Road Conditions
+
+> To help us understand a possible source of car crashes. We can utilize two data categories within the dataset. We can analyze weather and road conditions to see which ones stand out as possible influencers of car accidents.
+
+> Some questions we can try to answer:
+> * Is winter the worst time to drive in the city? For example, SNOW or BLOWING SNOW?
+> * Do road conditions like ICE or SNOW lead to a large number of accidents?
+
+``` 
+# use the reusable function to setup a widget powered plot to allow you filter by year
+# this method is specifically targeting the road conditions in comparison to the 
+# filter 1: year (bound to the unique list of all years within the datasframe
+# plot a heatmap for the selected year with specific categorical data: Weather and Road surface conditions.
+setup_heatmap_weather_road_condition_by_year(df_chicago_data)
+```
+#### static example of figure 4
+![figure_4_static](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main/static/figure_4_static.png)
+
+#### Heatmap Analysis
+
+> The heatmap reveals an interesting property of the data and possible assumptions. 
+> * Does the weather or road condition play role?
+>   * No. Looking at various years, the large number of accidents occur in dry and clear conditions. Other factors like traffic or a drivers prior accidents could help but the dataset lacks additional data around the volume of traffic at peak windows of traffic accidents and driver behaviors.
+> * 2013 and 2014 are clearly not valid data years. 
+
+### Figure 5 - Combined Dashboard
+
+> Throughout the workbook we saw various types of plots that analyzed data. Some were specific in their aggregation. Others introduced additional widgets to filter data like Year or Injury counts. As a final example of the ability that these various libraries can bring, a single dashboard using the same reusable functions and filter can be a cohesive way to look at all the data side by side.
+
+``` 
+# this reusable function will create a dashboard with all 4 of the visualizations presented previously and allow you modify the year
+create_interactive_dashboard(df_chicago_data)
+```
+
+#### static example of figure 5
+![figure_5_static](https://raw.githubusercontent.com/rmasud-michigan/siads_521_assignment_3/refs/heads/main/static/figure_5_static.png)
+
+### Dashboard Break Down
+
+> From left to right
+> * Row 1:
+>   * Crash Count by Year - no applicable filter - always show all years
+>   * Jitter Plot - Filtered by Year and Injury Count
+> * Row 2:
+>   * Distribution Crash Years - filtered by year
+>   * Heatmap of Categories (Weather to Road Condition) - filtered by year
+
+## Rules Adherence
+> As part of building a reusable and repeatable workbook, we want to adhere to rules that will help us a data scientists collect, present, and share our findings with peers. As part of this workbook, these are the key rules that helped guide the final product.
+
+### Rule 1 (Telling a story)
+> Knowing our audience and how to craft a computational narrative is key. The rule on storytelling is about knowing our audience and presenting complex layers of data in a meaningful way that conveys information. As part of this workbook, as the data is presented, I want to provide information around what is the intent of the presented model, how it was produced, and present possible questions they can answer from the data. Like a story, I aimed to explain what problems I might have encountered and the steps I needed to take. This will help establish the how, the what, and why.
+
+### Rule 2 (Document the process)
+> The documentation rule is about providing the context and flow of where I got the data, and how the data was transformed, and loaded into the environment. Similar to a term paper or other historical stories, we want to provide the footnotes on where we sourced information and how we obtained it. This is important to establish legitimacy on the outputs. As part of this workbook, context around specific processing is called out to help educate the reader and provide them with samples and sources as well that they can reference. The embedded code in cells will have a context for the functions being called and reusable.py module will have comments within the code to allow another developer to modify and enhance it as needed.
+
+### Rule 3 (Use Cell Divisions)
+> The rule of cell division helps us establish a cleaner set of areas in the workbook. Each cell can act as the boundary of information and points of focus. To help keep cells clean, functional areas that can call a function help reduce the initial UI noise. We want to keep cells from spanning multiple scrolls to provide a user with a section-by-section viewing experience. Cells can support code and markup like Markdown to add documentation and provide a section-by-section flow.
+
+### Rule 4 (Code Modularization)
+> The rule for code moderation is intended to keep complex code out of direct view as well as give us a clean separation of concerns. Creating concise, reusable, and parameterized functions allows the visual side of the workbook to stay more in presenting the data. The module code within the workbook directory helps us keep that clean. As part of this workbook, I created modules that worked in extract, transform, and loading spaces. The modules are part of the repo and also contain documentation within them to provide other users the ability to see how certain techniques are applied.
+
+### Rule 5 (Record Dependencies)
+> The rule for recording dependencies allows us to convey what is required to run our workbook end to end. By capturing the libraries and necessary system needs we ensure portability. As part of this workbook in the folder root is a requirements.txt that can deploy the required libraries via pip into an environment running Jupyter notebook. The dependencies are also part of the [README.me](README.md) in the repo so anyone can get a sense of what is required without having to install it first. Lastly, as part of the deployment, the first cell of the workbook installs the dependencies.
+
+### Rule 6 (Version Control)
+
+> The ability to restore and save a working set of code to demonstrate functionality is important in the development community. Version control systems like Git or SubVersion offer the ability to store backups and branches of code that can worked on by different team members. Systems like Git provides free accounts to users to upload and share their work with the global community.
+As part of this workbook, all the source code is available in a publicly available repository on Git and can be accessed at [siads_521_assignment_3](https://github.com/rmasud-michigan/siads_521_assignment_3.git).
