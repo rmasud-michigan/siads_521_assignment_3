@@ -6,7 +6,7 @@ This repo is intended to demonstrate real example of data visualizations with Py
 The various plots will analyze the City of Chicago crash data. 
 The analysis will use techniques to extract, transform and load the data.
 
-# Required Libraris:
+# Required Libraries:
 | Module     | Install                                                       | Description                                                                                                    |
 |------------|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
 | requests      | <div style="text-align: left">`pip install requests` </div>      | <div style="text-align: left">Python based HTTP client </div>             |
