@@ -20,6 +20,7 @@ The analysis will use techniques to extract, transform and load the data.
 | ipywidgets      | <div style="text-align: left">`pip install ipywidgets` </div>      | <div style="text-align: left">Jupyter interactive widgets </div>             |
 | watermark      | <div style="text-align: left">`pip install watermark` </div>      | <div style="text-align: left">IPython magic function to print date/time stamps and various system information. </div>             |
 
+
 ```
 pip install -r requirements.txt
 ```
