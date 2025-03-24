@@ -10,12 +10,16 @@ from scipy.stats import gaussian_kde,norm, kurtosis
 
 #visualization libraries
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as ticker
 import seaborn as sns
 
 #visualization libraries - ui interaction
 import panel as pn
+from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
-from IPython.display import display
+from IPython.display import display,clear_output
+
 
 const_default_storage_dir ='assets/data'
 const_src_url = "https://data.cityofchicago.org/api/views/85ca-t3if/rows.csv?fourfour=85ca-t3if&cacheBust=1742398767&date=20250319&accessType=DOWNLOAD"
@@ -243,7 +247,7 @@ def setup_interactive_jitter(df:pd.DataFrame):
     )
     
     #**************************************************************************************
-    #setup a check option to allow the user to see the data with or without a log transform
+    #injury selector - max 30 ouch!
     #**************************************************************************************
     minimalinjuryselector = widgets.IntSlider(
         value=1,
@@ -368,9 +372,6 @@ def setup_histogram_crashes_by_year(df:pd.DataFrame):
 
 
 
-
-
-
 # ****************************************************************
 #
 # ****************************************************************
@@ -478,7 +479,7 @@ def plot_frequency_heatmap_weather_road_condition(df: pd.DataFrame,year:int=None
         return
 
     df_copy = df.copy();
-    default_title='Heatmap: Weather Condition vs. Roadway Surface Condition'
+    default_title='Heatmap: Weather vs. Road Condition'
     
     if year is not None:
         df_copy = df_copy[df_copy['CRASH_YEAR'] == year]
@@ -491,10 +492,184 @@ def plot_frequency_heatmap_weather_road_condition(df: pd.DataFrame,year:int=None
     ax = sns.heatmap(cross_tab, annot=True, fmt="d", cmap="viridis", cbar_kws={'label': 'Frequency'})
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
 
-    plt.xlabel('Roadway Surface Condition')
+    plt.xlabel('Road Condition')
     plt.ylabel('Weather Condition')
     plt.title(default_title)
     plt.tight_layout()
     plt.show()
 
 
+
+def create_dashboard(df:pd.DataFrame,year:int=2024,minimalinjury:int=1):
+
+    df_copy = df.copy();
+
+    if year is not None:
+        df_copy = df_copy[df_copy['CRASH_YEAR'] == year]
+    
+    fig = plt.figure(figsize=(18, 16))
+    gs = fig.add_gridspec(2, 2)
+
+    #****************************************************
+    # Summarized bar by year - Not filtered - intentional
+    #****************************************************
+    ax1 = fig.add_subplot(gs[0, 0])
+    crash_counts_by_year = df['CRASH_YEAR'].value_counts().sort_index()
+    years = sorted(df['CRASH_YEAR'].unique())
+    year_counts = crash_counts_by_year.index.tolist()
+    counts = crash_counts_by_year.values.tolist()
+    bars = plt.bar( year_counts,counts, color='skyblue')
+    ax1.set_xticks(labels=years,ticks=years,rotation=45, ha='right')
+
+     # Annotate the percentage of change between the bars
+    for i in range(1, len(counts)):
+        old_count = counts[i-1]
+        new_count = counts[i]
+        if old_count == 0:
+            percentage_change = float('inf') if new_count > 0 else 0
+        else:
+            percentage_change = ((new_count - old_count) / old_count) * 100
+
+        height = bars[i].get_height()
+        plt.annotate(f'{percentage_change:.2f}%',
+                     xy=(bars[i].get_x() + bars[i].get_width() / 2, height),
+                     xytext=(0, 3),  # Offset in points
+                     textcoords='offset points',
+                     fontsize=7,
+                     ha='center', va='bottom')
+
+    ax1.set_title(f'Crash Count by Year')
+    #****************************************************
+
+    #****************************************************
+    # Jitter Scatter plot
+    #****************************************************
+    ax2 = fig.add_subplot(gs[0, 1])
+    # Define the amount of jitter
+    jitter = 0.2
+
+    df_copy2 = df_copy[df_copy['INJURIES_TOTAL']>=minimalinjury]
+
+    # Apply jitter to the 'LANE_CNT' and 'INJURIES_TOTAL' columns - we align the size of the filtered dataset (df_copy2) 
+    jittered_x = df_copy2['INJURIES_TOTAL'] + np.random.normal(loc=0, scale=jitter, size=len(df_copy2))
+    jittered_y = df_copy2['CRASH_HOUR'] + np.random.normal(loc=0, scale=jitter, size=len(df_copy2))
+
+     # Adjust this value to control the amount of jitter
+    sns.scatterplot(x=jittered_x, y=jittered_y, data=df_copy2, alpha=0.6)
+
+    # use the original so we get all hours
+    ax2.set_yticks(np.arange(0,24), sorted(df['CRASH_HOUR'].unique())) # Label y-axis with day names
+    
+    ax2.set_ylabel('Hour of the Day')
+    ax2.set_xlabel('Total # of Injuries')
+    ax2.set_title(f'Jitter Scatter - {year} for injury count {minimalinjury}')
+    #****************************************************
+
+    # Box plot
+    ax3 = fig.add_subplot(gs[1, 0])
+    crash_hours = df_copy['CRASH_HOUR']
+    ax3.hist(crash_hours, bins=range(25), density=True, alpha=0.4, color='green', edgecolor='black', label='Histogram')
+    
+    # like week 2
+    kde = gaussian_kde(crash_hours)
+    x_kde = np.linspace(min(crash_hours), max(crash_hours), 100)
+    density_kde = kde(x_kde)
+    ax3.plot(x_kde, density_kde, color='red', linewidth=2, label='KDE')
+    
+    # like week 2 -calculate the mean and standard deviation of the data
+    mean = np.mean(crash_hours)
+    std = np.std(crash_hours)
+    
+    # norm dist
+    xmin, xmax = plt.xlim()
+    x_norm = np.linspace(xmin, xmax, 100)
+    p = norm.pdf(x_norm, mean, std)
+
+    # calculate the kurtosis value
+    kurtosisval = kurtosis(crash_hours)
+    
+    ax3.plot(x_norm, p, 'k--', linewidth=2, label=f'Normal Distribution\n(μ={mean:.2f}, σ={std:.2f})')
+
+    # empty to add value purely to the legend - easier than a textbox!!
+    ax3.plot([], [], ' ', label=f'Kurtosis Value\n{kurtosisval:.2f}')
+
+    # Customize the plot
+    ax3.set_title(f'Distribution of Crash Hours with Normal Distribution {year}')
+    ax3.set_xlabel('Hour of the day (0-23) from midnight to 11pm')
+    ax3.set_ylabel('Probability Density')
+    ax3.set_xticks(range(24))
+    ax3.legend(loc='best')
+    #****************************************************
+
+
+    #****************************************************
+    # heatmap of the 2 category (Weather and Road)
+    #****************************************************
+    heatmap_default_title='Heatmap: Weather vs. Road Condition'
+    if year is not None:
+        heatmap_default_title =heatmap_default_title+ f' {year}'
+    
+    # Create a contingency table (frequency count) of the two columns
+    cross_tab = pd.crosstab(df_copy['WEATHER_CONDITION'], df_copy['ROADWAY_SURFACE_COND'])
+    ax4 = fig.add_subplot(gs[1, 1])
+    ax = sns.heatmap(cross_tab, annot=True, fmt="d", cmap="viridis", cbar_kws={'label': 'Frequency'})
+    ax.set_xticklabels(ax.get_xticklabels(), fontsize=6,rotation=45, ha='right')
+    ax.set_yticklabels(ax.get_yticklabels(), fontsize=6,rotation=45, ha='right')
+    ax4.set_xlabel('Road Condition',fontsize=6.5)
+    ax4.set_ylabel('Weather Condition',fontsize=6.5)
+    ax4.set_title(heatmap_default_title)
+
+    return fig
+
+
+def create_interactive_dashboard(df:pd.DataFrame):
+    """Creates an interactive dashboard with widgets for controlling the display."""
+    pn.extension('ipywidgets')
+    years = sorted(df['CRASH_YEAR'].unique(),reverse=True)
+    yearselector = widgets.Dropdown(
+        options=years,
+        value=years[0],
+        description='Year:',
+        disabled=False,
+    )
+
+    minimalinjuryselector = widgets.IntSlider(
+        value=1,
+        min=0,
+        max=30,
+        step=1,
+        description='Injury Count:',
+        disabled=False,
+        continuous_update=False,
+        orientation='horizontal',
+        readout=True,
+        readout_format='d'
+    )
+    
+    def update(year,minimumjury):
+        # Clear previous output to avoid memory issues
+        clear_output(wait=True)
+
+        # Create and display the dashboard with current widget values
+        fig = create_dashboard(df=df,year=year,minimalinjury=minimumjury)
+        plt.show()
+
+     # here we will create a panel row and apply Markdown # to create a title and our widgets
+    row = pn.Row('# Filter Options', yearselector,minimalinjuryselector, styles=dict(background='WhiteSmoke'))
+    
+    # create the initial iteractive plot
+    filteredplot = widgets.interactive_output(update, {'year': yearselector,'minimumjury':minimalinjuryselector})
+    
+    # display the row
+    display(row)
+    # display the filtered interactive
+    display(filteredplot)
+
+    
+    #widgets.interact(
+    #    update,                    # Function to call when widgets change - similar to per plot
+    #    year=yearselector,
+    #    styles=dict(background='WhiteSmoke')
+    #)
+    #display(row)
+    
